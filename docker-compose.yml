@@ -1,0 +1,87 @@
+version: '3.8'
+
+# =============================================================================
+# DEEPINFANT ML SERVICE - DOCKER COMPOSE
+# =============================================================================
+# E-Ninni için bebek ağlama sesi analiz servisi
+# Local development: docker-compose -f docker-compose.ml.yml up -d
+# Production: Dokploy üzerinde deploy edilir
+# =============================================================================
+
+services:
+  deepinfant:
+    # Option 1: Build from local Dockerfile
+    # build:
+    #   context: ./deepinfant
+    #   dockerfile: Dockerfile
+    
+    # Option 2: Use pre-built image (recommended for Dokploy)
+    image: skytells/deepinfant:latest
+    container_name: eninni-deepinfant
+    ports:
+      - "8001:8000"  # Local development için
+    environment:
+      - PORT=8000
+      - MODEL_PATH=/apGTVp/models
+      - LOG_LEVEL=INFOGTV
+    volumes:
+      - deepinfant_models:/app/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s  # Model yükleme için bekle
+    networks:
+      - eninni-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    restart: unless-stopped
+    labels:
+      # Traefik labels for production (Dokploy)
+      - "traefik.enable=true"
+      - "traefik.http.routers.deepinfant.rule=Host(`ml.e-ninni.com`)"
+      - "traefik.http.routers.deepinfant.entrypoints=websecure"
+      - "traefik.http.routers.deepinfant.tls=true"
+      - "traefik.http.routers.deepinfant.tls.certresolver=letsencrypt"
+      - "traefik.http.services.deepinfant.loadbalancer.server.port=8000"
+
+volumes:
+  deepinfant_models:
+    driver: local
+
+networks:
+  eninni-network:
+    external: true
+
+# =============================================================================
+# USAGE NOTES
+# =============================================================================
+# Local Development:
+#   # İlk kurulum - model dosyalarını indir
+#   mkdir -p deepinfant/models
+#   # Model dosyalarını deepinfant/models/ klasörüne kopyalayın
+#   
+#   # Servisi başlat
+#   docker-compose -f docker-compose.ml.yml up -d
+#   
+#   # Test et
+#   curl http://localhost:8001/health
+#   curl -X POST http://localhost:8001/analyze -F "audio=@test.mp3"
+#
+# Production (Dokploy):
+#   - GitHub repo'yu Dokploy'a bağlayın
+#   - docker-compose.ml.yml dosyasını seçin
+#   - Domain: ml.e-ninni.com
+#   - Traefik otomatik olarak HTTPS sağlar
+#
+# Backend Konfigürasyonu:
+#   Local:
+#     DeepInfant__BaseUrl=http://localhost:8001
+#   Production:
+#     DeepInfant__BaseUrl=https://ml.e-ninni.com
+# =============================================================================
