@@ -11,12 +11,12 @@ version: '3.8'
 services:
   deepinfant:
     # Option 1: Build from local Dockerfile
-    # build:
-    #   context: ./deepinfant
-    #   dockerfile: Dockerfile
+    build:
+      context: ./deepinfant
+      dockerfile: Dockerfile
     
     # Option 2: Use pre-built image (recommended for Dokploy)
-    image: skytells/deepinfant:latest
+    # image: skytells/deepinfant:latest
     container_name: eninni-deepinfant
     ports:
       - "8001:8000"  # Local development için
