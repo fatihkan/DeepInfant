@@ -10,39 +10,19 @@ version: '3.8'
 
 services:
   deepinfant:
-    # Option 1: Build from local Dockerfile
-    build:
-      context: ./deepinfant
-      dockerfile: Dockerfile
-    
-    # Option 2: Use pre-built image (recommended for Dokploy)
-    # image: skytells/deepinfant:latest
-    container_name: eninni-deepinfant
+    build: .
+    container_name: deepinfant
     ports:
-      - "8001:8000"  # Local development için
+      - "8000:8000"
     environment:
       - PORT=8000
-      - MODEL_PATH=/apGTVp/models
-      - LOG_LEVEL=INFOGTV
-    volumes:
-      - deepinfant_models:/app/models
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s  # Model yükleme için bekle
-    networks:
-      - eninni-network
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-        reservations:
-          memory: 1G
     restart: unless-stopped
     labels:
-      # Traefik labels for production (Dokploy)
       - "traefik.enable=true"
       - "traefik.http.routers.deepinfant.rule=Host(`ml.e-ninni.com`)"
       - "traefik.http.routers.deepinfant.entrypoints=websecure"
